@@ -20,8 +20,8 @@ from scipy.spatial.transform import Rotation
 
 def permutation_symbol()-> np.ndarray:
     '''
-    This function calculates the value of permutation operator.
-    For indices i, j, k (with values 0,1,2 for each index), the value of ε  is as follows for corresponding index values
+    This function calculates the value of permutation operator. This operator is also known as Levi-Civita symbol.
+    For indices i, j, k (with values 0,1,2 for each index), the value of ε is as follows for corresponding index values
     ε = 1 for (012), (120), (201)
     ε = -1 for (021), (210), (102)
     ε = 0 for for all other index values
@@ -178,8 +178,6 @@ def rotationTensor_Vec(rotVec: np.ndarray)-> np.ndarray:
     return rotationTensor
 
 
-
-
 #---------------------------------------------------------------------------------------#
 #-------------Functions to assist with Stiffness matrix calculation---------------------#
 #---------------------------------------------------------------------------------------#
@@ -256,7 +254,10 @@ def maptoLocal(NNPEL:np.float64, NGQP: np.float64, elemGlobalCoord: np.ndarray)-
 #---------------------------------------------------------------------------------------#
 
 def applied(inApplied, ECON, DOF, NNPEL, NEL):
-
+    '''
+    This function modifies the given input into a form that is suitable for calculation. 
+    Handles a input data structure where values are defined for all the nodes and all the degrees of freedom in the same dictionary.
+    '''
     applied = np.zeros(shape=[NEL, NNPEL, DOF//2], dtype=np.float64)
     
     for i, row in enumerate(ECON):
@@ -268,26 +269,121 @@ def applied(inApplied, ECON, DOF, NNPEL, NEL):
                     applied[i,j,k] = inApplied[key][index]
     
     return applied
-        
+
+def count(ECON, inpNodes):
+    '''
+    This function counts the nodes for which the parameter has been given (input).
+    This parameter can be boundary condition, applied force or applied moment.
+    '''
+
+    count = 0
+    for row in ECON:
+        for elemNode in row:
+            for inpNode in inpNodes:
+                if elemNode == inpNode:
+                    count +=1
+
+    return count
+
+def values(NEL, ECON, parameter):
+    '''
+    This function modifies the given input parameter into an dictionary form which is sparsly populated.
+    This parameter can be used for boundary conditions, applied force or applied moment.
+    The input is a dictionary of form {'DOF':{'nodes':[], 'values':[]}}
+    It also uses the count function defined above.
+    NEL: number of elements
+    ECON: element connectivity matrix
+    inpNodes: array of nodes for which the value has been defined
+    inpValues: array valus of a parameter at correspoding nodes.
+    Returns 
+    out: dictionary 
+        'pointer': It is an array defined in such a way that the difference of the array value at enxt index with current index gives the total number of given values for the element (given by the current index). 
+                    The value of the pointer at the current index is the index for 'nodes' and 'values' Its size if number of elements +1.
+        'nodes': numpy array of size same as the number of nodes for which the parameter has been defined (given by count()). It stores the element level nodal number at a particular index number. This index number is the value of 'pointer' at the particular element.
+        'values': numpy array of size given by count(). It stores the value of a parameter at a particular index number. This index number is the value of 'pointer' at the particular element.
+    '''
+
+    inpNodes, inpValues = parameter['nodes'], parameter['values']
+    counter = count(ECON, inpNodes)
+
+    # memory allocation
+    out = {'pointer': np.zeros(NEL+1, dtype=np.int32),
+            'nodes': np.zeros(counter, dtype=np.int32),
+            'values': np.zeros(counter, dtype=np.float64)
+            }
+
+    cnt = 0
+
+    for i, row in enumerate(ECON):
+        out['pointer'][i+1] = out['pointer'][i]
+        for j, elem_node in enumerate(row):
+            for node, value in zip(inpNodes, inpValues):
+                if elem_node == node:
+                    out['pointer'][i+1] += 1 
+                    out['nodes'][cnt] = j
+                    out['values'][cnt] = value
+                    cnt += 1 # increment counter
+    
+    return out        
+
+def appGenForce(applied, DOF, NNPEL, NEL, ECON):
+    '''
+    This function modifies the given input into a form that is suitable for calculation. 
+    Handles an input data structure similar to that processed by count() and values() above.
+    The input is a dictionary of form {'DOF':{'nodes':[], 'values':{}}} which is handled by values() to return a dictionary of form {'pointer':[], 'nodes':[], 'values':[]}
+    applied: input dictionary of form {'DOF':{'nodes':[], 'values':{}}}
+    '''
+    genDistForce = np.zeros(shape=[NEL, NNPEL, DOF//2], dtype=np.float64) # memory alocaiton
+
+    distLoad = {f'{key}': values(NEL, ECON, applied[key]) for key in applied.keys()}
+    
+    for j in range(DOF//2):
+        for i in range(NEL):
+            numLoads = distLoad[f'{j}']['pointer'][i+1]-distLoad[f'{j}']['pointer'][i]
+            if numLoads == 0:
+                genDistForce[i,:,j] = 0.0
+            else:
+                for numLoad in range(numLoads):
+                    cnt = distLoad[f'{j}']['pointer'][i] + numLoad
+                    elemNode = distLoad[f'{j}']['nodes'][cnt]
+                    genDistForce[i,elemNode,j] = distLoad[f'{j}']['values'][cnt]
+    
+    return genDistForce
+
 
 #---------------------------------------------------------------------------------------#
 #----------------Error Calculator-------------------------------------------------------#
 #---------------------------------------------------------------------------------------#         
 
-def calcError(config, newConfig):
+def calcErrorI(changeConfig, globalNodes):
         '''
-        This function calculates the error between new configuration and current configuration. This function will help determine the convergence of the solution.
-        The function returns the cumulative sum, which represents the total normalized error between the two configurations.
+        This function calculates the error based on the change in current configuraiton and normalises with respect to global number of nodes.
+        This function will help determine the convergence of the solution.
         This value is often used to determine if a numerical solution has converged to a stable state
-        config: dictionary of np.ndarray. Has keys from '0' to '5' with first 3 for translational DOF and remaining for rotational DOF.
-        newConfig: dictionary of np.ndarray. Similar structure as config.
+        changeConfig: dictionary of np.ndarray. Has keys from '0' to '5' with first 3 for translational DOF and remaining for rotational DOF.
 
         error: np.float64
         '''
         error = 0.0
+        error = np.max([np.linalg.norm(changeConfig[key])/globalNodes for key in changeConfig.keys()])
+        # error = np.linalg.norm(changeConfig['0'])/globalNodes
 
-        for key in newConfig.keys():
-            num = len(newConfig[key])
-            error += np.linalg.norm(newConfig[key] - config[key]) / num
-        
         return error
+
+def calcErrorII(changeConfig, newConfig, direction):
+        '''
+        This function calculates the error based on the change in current configuraiton and new configuraiton along a specified direction.
+        Direction can take values from 0, 1, 2 for translation along X, Y and Z axes or 3, 4, 5 for rotaiton about X, Y and Z axes.
+        This value is often used to determine if a numerical solution has converged to a stable state
+        changeConfig: dictionary of np.ndarray. Has keys from '0' to '5' with first 3 for translational DOF and remaining for rotational DOF.
+        newConfig: dictionary of np.ndarray. Similar structure as config.
+        direction: notation for identifying degree of freedom with respect to an axis.
+
+        error: np.float64
+        '''
+        error = 0.0
+        error = np.linalg.norm(changeConfig[f'{direction}'])/np.linalg.norm(newConfig[f'{direction}'])
+
+        return error
+
+

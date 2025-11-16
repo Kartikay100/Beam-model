@@ -24,33 +24,17 @@ class boundary():
 
     def countBC(self):
         '''
-        This function counts the number of essential boundary conditions specifed by the input.
+        This function counts the number of element level essential boundary conditions specifed by the nodes array (input).
         '''
 
         count = 0
         for row in self.ECON:
             for elemNode in row:
-                for node in self.boundaryCond['globalNode#']:
-                    if elemNode == node:
+                for inpNode in self.boundaryCond['globalNode#']:
+                    if elemNode == inpNode:
                         count +=1
 
         return count
-    
-    def countElemBC(self, i):
-        '''
-        This function counts the number of essential boundary conditions specifed by the input in a specified element.
-
-        i: It is the element number in computation.
-        '''
-        nodeElem = []
-        countElem = 0
-        for elemNode in self.ECON[i]:
-            for node in self.boundaryCond['globalNode#']:
-                if elemNode == node:
-                    countElem +=1
-                    nodeElem.append(elemNode)
-
-        return countElem, nodeElem
 
     def valueBC(self, count):
         '''
@@ -121,8 +105,69 @@ class boundary():
        
         return SME, CVE 
 
+class boundaryPDOF():
 
+    def __init__(self, DOFPN, NNPEL, NEL, ECON):
+        '''
+        Class constructor
+        '''
+        self.DOF = DOFPN
+        self.NNPEL = NNPEL
+        self.NEL = NEL
+        self.ECON = ECON
 
+    def applyEBCs(self, SME, CVE, i, iter, boundary):
+        '''
+        This function applies essential boundary conditions to the given stiffness matrix and column vector based on the out dictionary, which is the output of boundaryCs function.
+        It only handles one degree of freedom. Need to call this again and again to apply BC for multiple DOF.
+        i : current element number
+        j : current degree of freedom
+        '''
 
+        for key in boundary.keys():
+            out = boundary[f'{key}']
+            numberBCs = out['pointer'][i+1]-out['pointer'][i]
+            if numberBCs != 0:
+                j = int(key)
+                if iter == 0:
+                    for numberBC in range(numberBCs):
+                        cnt = out['pointer'][i] + numberBC
+                        elemNodeNum = out['nodes'][cnt] * self.DOF + j
+                        # code for applying essential boundary condition
+                        value = SME[elemNodeNum][elemNodeNum]
+                        SME[elemNodeNum,:] = 0.0
+                        CVE = CVE - out['values'][cnt]*SME[:,elemNodeNum]
+                        SME[:,elemNodeNum] = 0.0
+                        SME[elemNodeNum,elemNodeNum] = value
+                        CVE[elemNodeNum] = out['values'][cnt]*value
+                else:
+                    for numberBC in range(numberBCs):
+                        cnt = out['pointer'][i] + numberBC
+                        elemNodeNum = out['nodes'][cnt] * self.DOF + j
+                        # code for applying essential boundary condition
+                        value = SME[elemNodeNum][elemNodeNum]
+                        SME[elemNodeNum,:] = 0.0
+                        SME[:,elemNodeNum] = 0.0
+                        SME[elemNodeNum,elemNodeNum] = value
+                        CVE[elemNodeNum] = 0.0
+        
+        return SME, CVE 
+    
+    def applyNBCs(self, SME, CVE, i, iter, boundary, loadFactor):
+        '''
+        This function applies natural boundary conditions to the given stiffness matrix and column vector based on the out dictionary, which is the output of boundaryCs function.
+        It only handles one degree of freedom. Need to call this again and again to apply BC for multiple DOF.
 
+        '''
+        for key in boundary.keys():
+            out = boundary[f'{key}']
+            numberBCs = out['pointer'][i+1]-out['pointer'][i]
+            if numberBCs != 0:
+                if iter == 0:
+                    j = int(key)
+                    for numberBC in range(numberBCs):
+                        cnt = out['pointer'][i] + numberBC
+                        elemNodeNum = out['nodes'][cnt] * self.DOF + j
+                        CVE[elemNodeNum] += out['values'][cnt] * loadFactor
 
+        return SME, CVE 

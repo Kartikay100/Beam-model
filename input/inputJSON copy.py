@@ -2,31 +2,31 @@
 Author:      Kartikay Shukla
 File:        input.py
 Created:     Sept 22, 2025 
-LM:          Sept 22, 2025
+LM:          Oct 21, 2025
 
 DESCRIPTION
-This is an FEM Model for Timoshenko beam problem Example 4.5 from the book Introduction to Linear Finite Element Method, Second Edition.
-
 This file creates JSON file from the input dictionary.
 '''
 
 import json
-import numpy as np
+import numpy as np 
 
-rho = 7850
 g = 9.81 
 
-inputGeom = {'L': 10,   # length of beam, m
-        'I': 1.3465775404794298e-05,# moment of inertia m^4, pi*(D^4-d^4)/64
-        'Ri': 0.1016, # inner radius of pipe, m
-        'Ro': 0.1397, # outer radius of pipe, m
-        'A': 0.0288823, # cross-sectional area of beam in m^2
+inputGeom = {'L': 1,   # length of beam, m
+        'Di': 0.1016, # inner diameter of rod, m, 4in
+        'Do': 0.1397, # outer diameter of rod, m, 5.5in
+        'A1': 0.0381, # area of beam in m^2, of plane E1xE1
+        'A2': 0.0381, # area of beam in m^2, of plane E2xE2
+        'A3': 7.199E-3, # cross-sectional area of beam in m^2, of plane E3xE3
+        'I1': 13.4123E-6, # moment of inertia m^4, pi*(D^4-d^4)/64, inertia about E1xE1
+        'I2': 13.4123E-6, # moment of inertia m^4, pi*(D^4-d^4)/64, inertia about E2xE2
+        'J': 26.8246E-6, # polar moment of inertia m^4, pi*(D^4-d^4)/32, inertia about E3xE3, J=I1+I2
         }
 
 inputMatProp = {'E': 210E9, # Youngs modulus, Pa
-                'rho': rho, # density of steel, kg/m^3
-                'k': 10E5, # spring stiffness, lbf/ft
-                'G': 0, # shear modulus, psi
+                'rho': 7850, # density of steel, kg/m^3
+                'G': 80E9, # shear modulus, Pa
                 'Ks': 1.2E4 # shear correction coefficient, unitless
                 }
 
@@ -39,8 +39,8 @@ inputEBC = {'globalNode#': [0],
         'Rz': [0]
         }
 
-inputNBC = {'globalNode#': [2],
-        'Tx': [-500], # T for translation, force, in Newtons
+inputNBC = {'globalNode#': [50],
+        'Tx': [-5000_000], # T for translation, force, in Newtons
         'Ty': [0], 
         'Tz': [0],
         'Rx': [0], # R for rotation, moment
