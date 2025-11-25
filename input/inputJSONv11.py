@@ -2,10 +2,11 @@
 Author:      Kartikay Shukla
 File:        input.py
 Created:     Sept 22, 2025 
-LM:          Oct 21, 2025
+LM:          November 16, 2025
 
 DESCRIPTION
 This file creates JSON file from the input dictionary.
+Input data for verification #1- Cantilever beam with off-plane point moment full circular deformation.
 '''
 
 import json

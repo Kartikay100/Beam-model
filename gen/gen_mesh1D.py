@@ -9,6 +9,48 @@ This file contains functions for generating mesh for the given 1D geometry. The 
 '''
 
 import numpy as np
+from gen.gen_interpFunction import spectralNodes
+
+def mesh1DLGL(L, NEL, NNPEL, NGQP=None):
+    '''
+    This function generates mesh of global coordinates (NEL vs NNPEL array) based on a Gauss-Lobatto-Legendre spectral points.
+    This meshing scheme places nodes (and calculates its global coordinates) in an element which are unequally spaced.
+    L = length of beam , m
+    NEL = number of elements
+    NNPEL = number of nodes per elemnt
+    NGQP = number of Gauss quadrature points, initial value defined none if NNPEL=NGQP.
+    
+    Returns a numpy array of array of
+    ECON: Element connectivity matrix
+    elemGlobalCoord: global nodal coordinates per element
+    h: Size of elements. Numpy float64 for uniform element size.
+    '''
+    if NGQP == None:
+        NGQP = NNPEL
+    
+    # memory allocation for element connectivity matrix and global coordinate matrix
+    ECON = np.zeros(shape=[NEL,NNPEL],dtype=np.int32)
+    elemEndCoord = np.zeros(shape=[NEL,2],dtype=np.float64) # coordinates of end points of an element
+    elemGlobalCoord = np.zeros(shape=[NEL,NNPEL],dtype=np.float64)
+    
+    domain = spectralNodes(NGQP) # Location of nodes in natural coordinates for spectral basis
+    h = np.float64(L/NEL) # size of element - uniform meshing, np.float64
+   
+    # create element connectivity matrix and elemGlobalCoord matrix
+    for i in range(NEL):
+        if i==0:
+            elemEndCoord[i,0] = 0.0
+            elemEndCoord[i,1] = h
+            ECON[i,:]=np.array(range(NNPEL))
+        else:
+            elemEndCoord[i,0] = elemEndCoord[i-1,1]
+            elemEndCoord[i,1] = elemEndCoord[i,0] + h
+            ECON[i,:] = ECON[i-1]+(NNPEL-1)
+        for j in range(NNPEL):
+            elemGlobalCoord[i,j] = 0.5 * ( (1-domain[j])*elemEndCoord[i,0] + (1+domain[j])*elemEndCoord[i,1])
+    
+    return ECON, elemGlobalCoord
+
 
 def mesh1D(L, NEL, NNPEL, DOFPN=None):
     '''
@@ -63,7 +105,7 @@ def DOFCON (DOF, NEL, NNPEL, ECON):
 
     for i in range(NEL):
         for j in range(DOF):
-            DOFCON[i][j:eqns_p_elem:DOF] = (DOF * ECON[i,:]) + j
+            DOFCON[i,j:eqns_p_elem:DOF] = (DOF * ECON[i,:]) + j
            
     return DOFCON
 

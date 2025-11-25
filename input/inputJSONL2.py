@@ -6,7 +6,7 @@ LM:          Oct 21, 2025
 
 DESCRIPTION
 This file creates JSON file from the input dictionary.
-Input data for verification #4- Cantilever beam with rectangualr cross section with point load along Z direction (axial compression).
+Input data for verification #L2: Cantilever beam with rectangular cross section with point load along Z direction (axial compression).
 '''
 
 import json
@@ -39,7 +39,7 @@ inputEBC = {'globalNode#': [0],
         'Ry': [0],
         'Rz': [0]
         }
-inputNBC = {'globalNode#': [3000],
+inputNBC = {'globalNode#': [2],
         'Tx': [0], # T for translation, force, in Newtons
         'Ty': [0], 
         'Tz': [-5000],

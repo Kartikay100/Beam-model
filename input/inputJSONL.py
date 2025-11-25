@@ -6,7 +6,7 @@ LM:          Oct 21, 2025
 
 DESCRIPTION
 This file creates JSON file from the input dictionary.
-Input data for verification #4- Cantilever beam with rectangualr cross section with point load along Z direction (axial compression).
+Input data for verification #L1: Cantilever beam with rectangular cross section with point load along X direction.
 '''
 
 import json
@@ -31,18 +31,18 @@ inputMatProp = {'E': 210E9, # Youngs modulus, Pa
                 'Ks': 1.2E4 # shear correction coefficient, unitless
                 }
 
-inputEBC = {'globalNode#': [0],
-        'Tx': [0], # T for translation
+inputEBC = {'globalNode#': [0, 2],
+        'Tx': [0,0], # T for translation
+        'Ty': [0,0], 
+        'Tz': [0,0],
+        'Rx': [None, None], # R for rotation
+        'Ry': [None, None],
+        'Rz': [None, None]
+        }
+inputNBC = {'globalNode#': [1],
+        'Tx': [-5000], # T for translation, force, in Newtons
         'Ty': [0], 
         'Tz': [0],
-        'Rx': [0], # R for rotation
-        'Ry': [0],
-        'Rz': [0]
-        }
-inputNBC = {'globalNode#': [3000],
-        'Tx': [0], # T for translation, force, in Newtons
-        'Ty': [0], 
-        'Tz': [-5000],
         'Rx': [0], # R for rotation, moment
         'Ry': [0],
         'Rz': [0]

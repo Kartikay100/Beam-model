@@ -10,9 +10,23 @@ This file contains functions for computing interpolation functions. Based on num
 
 import sympy as sy
 import numpy as np
-from .gen_mesh1D import *
+from scipy.special import legendre
 from .gen_spectNodes import *
 from .gen_gaussQuadCalc import *
+
+def spectralNodes(points:int) -> np.ndarray:
+    '''
+    This function creates an array of spectral nodal points (also called as Gauss-Lobatto-Legendre points) over the interval [-1,1].
+    points: number of nodes. Defines the degree of polynomial.
+    '''
+    polyOrder = points-1
+    dervPolyOrder = legendre(polyOrder).deriv()
+
+    rootsDervPolyOrder = dervPolyOrder.roots
+    rootsDervPolyOrder.sort()
+    specNodes = np.insert(rootsDervPolyOrder, [0,len(rootsDervPolyOrder)],[-1,1])
+
+    return specNodes
 
 def interpLagGLQ(NNPEL, NGQP):
     '''
@@ -24,8 +38,9 @@ def interpLagGLQ(NNPEL, NGQP):
 
     #------------------Initialise-------------------------------#
     # calling domain values at nodes in natural coordinates
-    domain = domainNatCoord(NNPEL) # domain of natural coordinates, used for integration using Gauss Legendre Quadrature points.
-    gaussPoints = gLQ(NGQP)['points']
+    # domain = domainNatCoord(NNPEL) # domain of natural coordinates, used for integration using Gauss Legendre Quadrature points, calls Gauss–Lobatto node
+    domain = spectralNodes(NNPEL)
+    gaussPoints = gLQ(NGQP)['points'] # NumPy library to call Gauss-Legendre
     # gaussWts = gLQ(NGQP)['weights']
 
     # Empty dictionariy to assign values
@@ -49,12 +64,11 @@ def interpLagGLQ(NNPEL, NGQP):
         for j,val in enumerate(domain):
             phiDiff = 0 # empty variable for summation
             for i in range(NNPEL):
-                if i!=j:
-                    phi = 1 # empty variable for product
-                    for m in range(NNPEL):
-                        if m!=j:
-                            if m!=i:
-                                phi = phi*(x-domain[m])/(val-domain[m])
+                phi = 1 # empty variable for product
+                for m in range(NNPEL):
+                    if ((m!=j) and (m!=i)):
+                        phi *= (x-domain[m])/(val-domain[m])
+                if (i!=j):
                     phiDiff += (1/(val-domain[i]))*phi  
             
             funcLagDiff[j][n] = phiDiff

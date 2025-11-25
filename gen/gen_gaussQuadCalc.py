@@ -16,7 +16,7 @@ def gLQ(NGQP):
 
     NGQP: Number of Guass Quadrature points
     '''
-    gaussLeg = {'points': np.empty(NGQP), 'weights': np.empty(NGQP)}
+    gaussLeg = {'points': np.zeros(shape=NGQP, dtype=np.float64), 'weights': np.zeros(shape=NGQP, dtype=np.float64)}
     gaussLeg['points'], gaussLeg['weights'] = np.polynomial.legendre.leggauss(NGQP)
 
     return gaussLeg

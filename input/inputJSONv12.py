@@ -2,16 +2,19 @@
 Author:      Kartikay Shukla
 File:        input.py
 Created:     Sept 22, 2025 
-LM:          Oct 21, 2025
+LM:          November 16, 2025
 
 DESCRIPTION
 This file creates JSON file from the input dictionary.
+Input data for verification #1- Cantilever beam with off-plane point moment full circular deformation.
 '''
 
 import json
 import numpy as np 
 
 g = 9.81 
+rho = 7850
+F = -rho * g
 moment = 4*np.pi / np.sqrt(2)
 Im = 7850 * 0.0000109477 * 1**3 / 3
 
@@ -50,10 +53,10 @@ inputNBC = {'globalNode#': [100],
         'Rz': [0]
         }
 
-inputForce = {'globalNode#': [0, 1, 2, 3, 4, 5],
-                 'X': [0, 0, 0, 0, 0, 0],
-                 'Y': [0, 0, 0, 0, 0, 0],
-                 'Z': [0, 0, 0, 0, 0, 0]
+inputForce = {'globalNode#': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+                 'X': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                 'Y': [F, F, F, F, F, F, F, F, F, F, F],
+                 'Z': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
                  }
 
 inputMoment = {'globalNode#': [0, 1, 2, 3, 4, 5],

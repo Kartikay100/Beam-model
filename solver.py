@@ -16,10 +16,10 @@ from scipy.sparse import coo_array
 from scipy.sparse import csr_matrix
 from scipy.sparse.linalg import spsolve
 
-from gen.gen_interpFunction import *
-from gen.gen_utilities import *
-from gen.gen_gaussQuadCalc import *
-from gen.gen_mesh1D import *
+from gen.gen_interpFunction import interpLagGLQ
+from gen.gen_utilities import permutation_symbol, rotTensor, rotVector, calcErrorI
+from gen.gen_gaussQuadCalc import gLQ
+from gen.gen_mesh1D import DOFCON
 from boundary import boundaryPDOF
 
 class FEMSolver:
@@ -27,7 +27,7 @@ class FEMSolver:
     Class to solve finite strain beam finite element problem.
     '''
 
-    def __init__(self, DOFPN, NNPEL, NEL, ECON, elemGlobalCoord, boundaryE, boundaryN, appForce, appMoment, inMatModF, inMatModM):
+    def __init__(self, DOFPN, NNPEL, NEL, ECON, elemGlobalCoord, boundaryE, boundaryN, appForce, appMoment, inMatModF, inMatModM, NGQP = None):
         '''
         Class constructor
         DOFPN: degree of freedom per node, np.float64.
@@ -57,7 +57,9 @@ class FEMSolver:
         self.appMoment = appMoment
         self.inMatModF = inMatModF
         self.inMatModM = inMatModM
-        if NNPEL<3:
+        if NGQP != None:
+            self.NGQP = NGQP 
+        elif NNPEL<3:
             self.NGQP = NNPEL-1 # reduced order integration
         else:
             self.NGQP = NNPEL # number of gauss points same as number of nodes per element to ensure full integration.
@@ -66,7 +68,7 @@ class FEMSolver:
         # interpolation functions
         self.interp, self.interpDiff = interpLagGLQ(self.NNPEL, self.NGQP)
         # calling gauss weights from gaussLegQuad function
-        self.gaussWt = gaussLegQuad(self.NGQP)[1]
+        self.gaussWt = gLQ(self.NGQP)['weights']
         # permutation operator from utilities function
         self.permutation = permutation_symbol()
         # initialising class object
@@ -115,14 +117,20 @@ class FEMSolver:
         self.coeffSME = {f'K{i}{j}':np.zeros(shape=[self.NNPEL,self.NNPEL],dtype=np.float64) for i,j in product(range(self.DOF), repeat=2)} # memory allocation for constants of elemental stiffness matrices
         self.CVE = np.zeros(shape=self.shapeElemMat, dtype=np.float64)
         self.coeffCVE = {f'F{i}':np.zeros(shape=self.NNPEL,dtype=np.float64) for i in range(self.DOF)} # memory allocation for constants of elemental force vector
+        #----------------------------MEMORY ALLOCATION for boundary functions-------------------------------------------#
+        self.transNBC = np.zeros(shape=self.DOF//2, dtype=np.float64)
+        self.transNBCTransf = np.zeros(shape=self.DOF//2, dtype=np.float64)
+        self.rotNBC = np.zeros(shape=self.DOF//2, dtype=np.float64)
+        self.rotNBCTransf = np.zeros(shape=self.DOF//2, dtype=np.float64)
+        self.valuesNBC = np.zeros(shape=self.DOF, dtype=np.float64)
         #----------------------------MEMORY ALLOCATION for global level functions-------------------------------------------#
         # variables for storing vectorised coefficient matrix and column vector
         self.sparSMG = np.zeros(shape=self.sizeSparGM, dtype=np.float64)
         self.SMG = csr_matrix((self.shapeGM,self.shapeGM), dtype=np.float64)
         self.CVG =  np.zeros(shape=self.shapeGM, dtype=np.float64)
         # variables for storing index locations of coefficient matrix
-        self.sparIIrow = np.zeros(shape=self.sizeSparGM, dtype=np.float64)
-        self.sparJJcol = np.zeros(shape=self.sizeSparGM, dtype=np.float64)
+        self.sparIIrow = np.zeros(shape=self.sizeSparGM, dtype=np.int32)
+        self.sparJJcol = np.zeros(shape=self.sizeSparGM, dtype=np.int32)
         # array variable for storing solution
         self.changeSolution = np.zeros(shape=self.shapeGM, dtype=np.float64)
 
@@ -139,7 +147,7 @@ class FEMSolver:
         for j,row in enumerate(self.ECON):
             for k, node in enumerate(row):
                 self.phi_o[node,-1] = elemGlobalCoord[j,k]
-        
+        # print('phio=',self.phi_o)
         self.previousConfig['0'][:] = self.phi_o[:,0]
         self.previousConfig['1'][:] = self.phi_o[:,1]
         self.previousConfig['2'][:] = self.phi_o[:,2]
@@ -158,10 +166,6 @@ class FEMSolver:
         '''
 
         # Re-zero memory allocations
-        self.S['S0'][:] = 0.0
-        self.S['S1'][:] = 0.0
-        for key in self.outerS.keys():
-            self.outerS[key][:,:] = 0.0
         self.SME[:,:] = 0.0
         for key in self.coeffSME.keys():
             self.coeffSME[key][:,:] = 0.0
@@ -173,6 +177,7 @@ class FEMSolver:
 
         # configuration update initialisation
         self.prevOmegaGP[i,:,:] = self.omegaGP[i,:,:]
+        self.omegaGP[i,:,:] = 0.0
         self.netRotVec[:,:] = np.array([self.newConfig['3'][self.ECON[i]], 
                                         self.newConfig['4'][self.ECON[i]], 
                                         self.newConfig['5'][self.ECON[i]]], dtype=np.float64)
@@ -183,6 +188,10 @@ class FEMSolver:
         
         for GP in range(self.NGQP):
             # Re-zero temporary memory allocations
+            self.S['S0'][:] = 0.0
+            self.S['S1'][:] = 0.0
+            for key in self.outerS.keys():
+                self.outerS[key][:,:] = 0.0
             self.dphi_oE[:] = 0.0
             self.nuGP[:] = 0.0
             self.diffNuGP[:] = 0.0
@@ -203,6 +212,8 @@ class FEMSolver:
             # interpolation functions
             self.S['S0'][:] = self.interp[:,GP]
             self.S['S1'][:] = self.interpDiff[:,GP] * (1 / self.J[i,GP])
+            # print('S0=',self.S['S0'])
+            # print('S1=',self.S['S1'])
             # outer product of interpolation functions
             self.outerS['S00'][:,:] = np.outer(self.S['S0'],self.S['S0'])
             self.outerS['S01'][:,:] = np.outer(self.S['S0'],self.S['S1'])
@@ -253,13 +264,10 @@ class FEMSolver:
             for a in range(self.DOF//2): # a=alpha, b=beta as notes in reference material
                 for b in range(self.DOF//2):
                     self.coeffSME[f'K{a}{b}'][:,:] += self.matModFGP[a,b] * self.outerS['S11'] * effecWt
-                    
                     # self.coeffSME[f'K{a}{b+self.DOF//2}'][:,:] += (np.dot(np.dot(self.dphi_oE, self.permutation[:,b,:]), self.matModFGP[a,:].T) - np.dot(self.forceGP[:], self.permutation[:,b,a])) * self.outerS['S10'] * effecWt
                     self.coeffSME[f'K{a}{b+self.DOF//2}'][:,:] += (self.dphi_oE @ self.permutation[:,b,:] @ self.matModFGP[a,:].T - self.forceGP @ self.permutation[:,b,a]) * self.outerS['S10'] * effecWt
-                    
                     # self.coeffSME[f'K{a+self.DOF//2}{b}'][:,:] += (np.dot(np.dot(self.dphi_oE, self.permutation[:,a,:]), self.matModFGP[b,:].T) + np.dot(self.forceGP[:], self.permutation[:,b,a])) * self.outerS['S01'] * effecWt
                     self.coeffSME[f'K{a+self.DOF//2}{b}'][:,:] += (self.dphi_oE @ self.permutation[:,a,:] @ self.matModFGP[b,:].T + self.forceGP @ self.permutation[:,b,a]) * self.outerS['S01'] * effecWt    
-                    
                     # self.coeffSME[f'K{a+self.DOF//2}{b+self.DOF//2}'][:,:] += ((np.dot(np.dot(np.dot(self.dphi_oE, self.permutation[:,a,:]), self.matModFGP[:,:]), np.dot(self.dphi_oE, self.permutation[:,b,:]).T)\
                     #                                     + np.dot(np.dot(self.permutation[a,:,:],np.dot(self.forceGP[:], self.permutation[:,b,:]).T), self.dphi_oE)) * self.outerS['S00'] \
                     #                                     + (- np.dot(self.momentGP[:], self.permutation[:,b,a])) * self.outerS['S10'] \
@@ -269,20 +277,16 @@ class FEMSolver:
                                                         + (- self.momentGP @ self.permutation[:,b,a]) * self.outerS['S10'] \
                                                         + (self.matModMGP[a,b]) * self.outerS['S11']) * effecWt
                 
-                    
                 self.coeffCVE[f'F{a}'][:] += ((-self.forceGP[a] * self.S['S1']) + (self.appForceGP[a] * self.S['S0'])) * effecWt
-                # print(f'self.coeffCVE[F{a}]=',self.coeffCVE[f'F{a}'])
                 # self.coeffCVE[f'F{a+self.DOF//2}'][:] += (((np.dot(np.dot(self.permutation[a,:,:], self.forceGP[:]), self.dphi_oE[:])) + self.appMomentGP[a]) * self.S['S0'] + (- self.momentGP[a]) * self.S['S1']) * effecWt
                 self.coeffCVE[f'F{a+self.DOF//2}'][:] += ((((self.permutation[a,:,:] @ self.forceGP) @ self.dphi_oE) + self.appMomentGP[a]) * self.S['S0'] + (- self.momentGP[a]) * self.S['S1']) * effecWt
                 # print(f'self.coeffCVE[F{a+self.DOF//2}]=',self.coeffCVE[f'F{a+self.DOF//2}'])
-              
+
         for j in range(self.DOF):
             for k in range(self.DOF):
                 self.SME[j:self.eqns_p_elem:self.DOF, k:self.eqns_p_elem:self.DOF] = self.coeffSME[f'K{j}{k}']
             self.CVE[j:self.eqns_p_elem:self.DOF] = self.coeffCVE[f'F{j}']
-        # print('detSME=',np.linalg.det(self.SME))
-        # print('SME=',self.SME)
-        # print(f'coeffSME=',self.coeffSME)
+        
         # return self.SME, self.CVE
 
     def _applyEBC(self, i, iter):
@@ -340,17 +344,46 @@ class FEMSolver:
             index = np.where(self.boundaryN['Elem']==i)[0] # [0] because index could be a 1D array and np.where returns a tupple
             for k in index:
                 indexNode =  self.boundaryN['Nodes'][k] * self.DOF
+                '''
+                self.valuesNBC[:] = 0.0
+                if iter == 0:
+                    self.valuesNBC[0] = self.boundaryN['Values'][k,0]
+                    self.valuesNBC[1] = self.boundaryN['Values'][k,1]
+                    self.valuesNBC[2] = self.boundaryN['Values'][k,2]
+                    self.valuesNBC[3] = self.boundaryN['Values'][k,3]
+                    self.valuesNBC[4] = self.boundaryN['Values'][k,4]
+                    self.valuesNBC[5] = self.boundaryN['Values'][k,5]
+                else:
+                    self.netRotVecGP[:] = 0.0 # using same memory space for rotation vector
+                    self.netRotVecGP[:] = np.array([self.changeConfig['3'][self.ECON[i,self.boundaryN['Nodes'][k]]], 
+                                                    self.changeConfig['4'][self.ECON[i,self.boundaryN['Nodes'][k]]], 
+                                                    self.changeConfig['5'][self.ECON[i,self.boundaryN['Nodes'][k]]]], dtype=np.float64)
+                    self.netRotMatGP[:,:] = 0.0 # using same memory space for rotation matrix
+                    self.netRotMatGP[:,:] = rotTensor(self.netRotVecGP)
+                    self.rotNBC[:] = 0.0
+                    self.transNBC[:] = 0.0
+                    self.transNBC[:] = np.array([self.boundaryN['Values'][k,0],
+                                            self.boundaryN['Values'][k,1],
+                                            self.boundaryN['Values'][k,2]], dtype=np.float64)
+                    self.rotNBC[:] = np.array([self.boundaryN['Values'][k,3],
+                                            self.boundaryN['Values'][k,4],
+                                            self.boundaryN['Values'][k,5]], dtype=np.float64)
+                    
+                    self.rotNBCTransf[:] = self.netRotMatGP @ self.rotNBC
+                    self.transNBCTransf[:] = self.netRotMatGP @ self.transNBC
+                    self.valuesNBC[0] = self.transNBCTransf[0]
+                    self.valuesNBC[1] = self.transNBCTransf[1]
+                    self.valuesNBC[2] = self.transNBCTransf[2]
+                    self.valuesNBC[3] = self.rotNBCTransf[0]
+                    self.valuesNBC[4] = self.rotNBCTransf[1]
+                    self.valuesNBC[5] = self.rotNBCTransf[2]
+                    # print('NboundarValues=',self.boundaryN['Values'][k])
+                # '''
                 for j in range(self.DOF):    
                     # code for applying natural boundary condition for first iteration
-                    # print(f'self.CVE[{indexNode}+{j}]=',self.CVE[indexNode+j])
-                    # print('ratioLoadStep=',ratioLoadStep)
-                    # print(f'self.boundaryN[Values][{k},{j}]=',self.boundaryN['Values'][k,j])
+                    # self.CVE[indexNode+j] += self.valuesNBC[j] * ratioLoadStep
                     self.CVE[indexNode+j] += self.boundaryN['Values'][k,j] * ratioLoadStep
                     # print(f'self.CVE[{indexNode}+{j}]=',self.CVE[indexNode+j])
-                # else:
-                #     for j in range(self.DOF):    
-                #         # code for applying homogeneous natural boundary condition
-                #         self.CVE[indexNode+j] += 0.0 
         
         # return self.SME , self.CVE 
 
@@ -388,9 +421,6 @@ class FEMSolver:
             self._elemMatComput(i)
             self._applyEBC(i, iter)
             self._applyNBC(i, iter, ratioLoadStep)
-            # print('CVE=',self.CVE)    
-            # print('detSME=',np.linalg.det(self.SME))
-            # print('SME=',self.SME)
             # Global stiffness matrix assembly
             self.sparSMG[m:m+self.sizeElemMat] = self.SME.flatten() # value
             self.sparIIrow[m:m+self.sizeElemMat] = np.repeat(self.dofCON[i],self.shapeElemMat) # row index
@@ -401,9 +431,7 @@ class FEMSolver:
             self.CVG[self.dofCON[i]] += self.CVE
 
         # create global sparse stiffness matrix from vectorised matrix
-        self.SMG[:,:] = coo_array((self.sparSMG, (self.sparIIrow,self.sparJJcol)), shape=(self.shapeGM,self.shapeGM)).tocsr()
-        print('detSMG=',np.linalg.det(self.SMG.todense()))
-        # print('CVG=',self.CVG)
+        self.SMG[:,:] = coo_array((self.sparSMG, (self.sparIIrow,self.sparJJcol)), shape=(self.shapeGM,self.shapeGM), dtype=np.float64).tocsr()
         # solve the linear algebra problem using sparse solver
         self.changeSolution[:] = spsolve(self.SMG, self.CVG)
         # return self.changeSolution
@@ -470,9 +498,6 @@ class FEMSolver:
         self.phi_o[:,0] = self.newConfig['0'][:]
         self.phi_o[:,1] = self.newConfig['1'][:]
         self.phi_o[:,2] = self.newConfig['2'][:]
-
-        # print('newConfig=',self.newConfig)
-        # print('changeConfig=',self.changeConfig)
         # return self.previousConfig, self.newConfig #self.phi_o
 
     def FEMSolve(self, iterCount, ratioLoadStep):

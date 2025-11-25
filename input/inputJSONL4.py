@@ -6,14 +6,14 @@ LM:          Oct 21, 2025
 
 DESCRIPTION
 This file creates JSON file from the input dictionary.
+Input data for verification #L4- Cantilever beam with point torque load (about Z direction, twisting of beam)
 '''
 
 import json
 import numpy as np 
 
 g = 9.81 
-moment = 4*np.pi / np.sqrt(2)
-Im = 7850 * 0.0000109477 * 1**3 / 3
+twist = 1.1967966328888697 # T = theta * G * J / L for theta = 45deg = pi/4 radian
 
 inputGeom = {'L': 1,   # length of beam, m
         'D': 3.73216E-3, # diameter of rod, m
@@ -29,7 +29,6 @@ inputMatProp = {'E': 210E9, # Youngs modulus, Pa
                 'rho': 7850, # density of steel, kg/m^3
                 'G': 80E9, # shear modulus, Pa
                 'Ks': 1E4, # shear correction factor, unitless
-                'Im': Im, # mass moment of inertia of rod about its end mL^2/3
                 }
 
 inputEBC = {'globalNode#': [0],
@@ -41,13 +40,13 @@ inputEBC = {'globalNode#': [0],
         'Rz': [0]
         }
 
-inputNBC = {'globalNode#': [100],
+inputNBC = {'globalNode#': [2],
         'Tx': [0], # T for translation, force, in Newtons
         'Ty': [0], 
         'Tz': [0],
-        'Rx': [moment], # R for rotation, moment
-        'Ry': [moment],
-        'Rz': [0]
+        'Rx': [0], # R for rotation, moment
+        'Ry': [0],
+        'Rz': [twist]
         }
 
 inputForce = {'globalNode#': [0, 1, 2, 3, 4, 5],

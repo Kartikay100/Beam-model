@@ -6,14 +6,14 @@ LM:          Oct 21, 2025
 
 DESCRIPTION
 This file creates JSON file from the input dictionary.
+Input data for verification # L5- Cantilever beam with point moment load about Y direction for full circular deformation.
 '''
 
 import json
 import numpy as np 
 
 g = 9.81 
-moment = 4*np.pi / np.sqrt(2)
-Im = 7850 * 0.0000109477 * 1**3 / 3
+moment = 2*4*np.pi #* np.sqrt(2)
 
 inputGeom = {'L': 1,   # length of beam, m
         'D': 3.73216E-3, # diameter of rod, m
@@ -29,7 +29,6 @@ inputMatProp = {'E': 210E9, # Youngs modulus, Pa
                 'rho': 7850, # density of steel, kg/m^3
                 'G': 80E9, # shear modulus, Pa
                 'Ks': 1E4, # shear correction factor, unitless
-                'Im': Im, # mass moment of inertia of rod about its end mL^2/3
                 }
 
 inputEBC = {'globalNode#': [0],
@@ -41,11 +40,11 @@ inputEBC = {'globalNode#': [0],
         'Rz': [0]
         }
 
-inputNBC = {'globalNode#': [100],
+inputNBC = {'globalNode#': [5],
         'Tx': [0], # T for translation, force, in Newtons
         'Ty': [0], 
         'Tz': [0],
-        'Rx': [moment], # R for rotation, moment
+        'Rx': [0], # R for rotation, moment
         'Ry': [moment],
         'Rz': [0]
         }

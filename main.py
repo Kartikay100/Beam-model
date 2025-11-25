@@ -8,6 +8,9 @@ Description
 This file contains code for solving Finite strain beam formulation using FE method.
 Refer to Dr. Greg Payette's notes and Dr Simo's paper (part I and II) for details on formula for calculation.
 '''
+
+from gen.gen_compCost import *
+start = tic()
 from gen.gen_mesh1D import *
 from gen.gen_utilities import *
 from solver import *
@@ -18,7 +21,7 @@ from gen.gen_plot import *
 
 # Finite element parameters
 NEL= 10
-NNPEL= 2
+NNPEL = 2
 DOFPN = 6
 iterations = 10
 convergence = 1E-5
@@ -37,7 +40,7 @@ inMatModM = np.diag([material['E'] * geom['I1'],
                      material['G'] * geom['J'] 
                      ])
 
-ECON, elemGlobalCoord = mesh1D(geom['L'], NEL, NNPEL)
+ECON, elemGlobalCoord = mesh1DLGL(geom['L'], NEL, NNPEL)
 # print('ECON=',ECON)
 
 # initialising boundary class object and preparing boundary conditions for applying
@@ -56,6 +59,7 @@ appMoment = applied(inAppMoment, ECON, DOFPN, NNPEL, NEL)
 # initialising class object
 solverObj = FEMSolver(DOFPN, NNPEL, NEL, ECON, elemGlobalCoord, EBC, NBC, appForce, appMoment, inMatModF, inMatModM)
 
+loadstep_conv = 0
 for loadstep in range(loadsteps):
         print('loadstep=',loadstep)
         ratio = (loadstep+1)/loadsteps
@@ -63,6 +67,8 @@ for loadstep in range(loadsteps):
                 print('iter=',iter)
                 error, solution = solverObj.FEMSolve(iter, ratio)
                 print('error=',error, 'at loadstep=',loadstep+1, 'iter=',iter+1, 'at ratioLoadstep=',ratio)
+                # print('Tx=',solution['0'])
+                # print('RY=',solution['4'])
                 print('solution [Tx]=',solution['0'][-1],
                         '[Ty]=',solution['1'][-1],
                         '[Tz]=',solution['2'][-1],
@@ -71,12 +77,13 @@ for loadstep in range(loadsteps):
                         '[Rz]=',solution['5'][-1], 'at loadstep=',loadstep+1, 'iter=',iter+1, 'at ratioLoadstep=',ratio)
                 if error < convergence:
                         print('Solution convereged in ', iter+1, 'iterations')
-                        print('solution [Tz]=', f'{solution['2'][-1]:.120f}')
-                        print('solution [Rz]=', solution['5'][-1])
+                        # print('solution [Tz]=', f'{solution['2'][-1]}')
+                        # print('solution [Rz]=', solution['5'][-1])
+                        loadstep_conv += 1
                         break
                 else:
                         continue
-
+print('Loadsteps converged = ',loadstep_conv)
 result = postprocessing(elemGlobalCoord, solution)
 label3DDefl = ['Deflection of beam', 'Deflection along Z', 'Deflection along X', 'Deflection along Y']
 legDefl = 'Defllection of Centerline of beam'
@@ -93,4 +100,5 @@ plotGen(result[0], result[2]['X'], 'X', labelSlp)
 plotGen(result[0], result[2]['Y'], 'Y', labelSlp)
 plotGen(result[0], result[2]['Z'], 'Z', labelSlp)
 
+time = toc(start)
 plt.show()

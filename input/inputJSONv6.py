@@ -39,7 +39,7 @@ inputEBC = {'globalNode#': [0],
         'Ry': [0],
         'Rz': [0]
         }
-inputNBC = {'globalNode#': [10],
+inputNBC = {'globalNode#': [200],
         'Tx': [-5000], # T for translation, force, in Newtons
         'Ty': [-5000], 
         'Tz': [0],
