@@ -386,4 +386,27 @@ def calcErrorII(changeConfig, newConfig, direction):
 
         return error
 
+def lengthCheck(globalNodes, config):
+    '''
+    This function calculates the length of the beam after deformation. This number can be compared with the initial length.
+    Assumed linear interpolation between points.
+    
+    globalNodes: Total number of nodes. Tranlation vector is defined for each node.
+    config: configuration of beam for each degree of freedom at each global node.
+
+    Output:
+    length: length of beam after deformation.
+    '''
+    length = 0
+    for i in range(1, globalNodes):
+        X = config['0'][i] - config['0'][i-1]
+        Y = config['1'][i] - config['1'][i-1]
+        Z = config['2'][i] - config['2'][i-1]
+
+        transVec = np.array([X,Y,Z], dtype=np.float64)
+        length += np.linalg.norm(transVec)
+
+    return length
+
+
 

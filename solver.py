@@ -17,7 +17,7 @@ from scipy.sparse import csr_matrix
 from scipy.sparse.linalg import spsolve
 
 from gen.gen_interpFunction import interpLagGLQ
-from gen.gen_utilities import permutation_symbol, rotTensor, rotVector, calcErrorI
+from gen.gen_utilities import permutation_symbol, rotTensor, rotVector, calcErrorI, lengthCheck
 from gen.gen_gaussQuadCalc import gLQ
 from gen.gen_mesh1D import DOFCON
 from boundary import boundaryPDOF
@@ -344,7 +344,7 @@ class FEMSolver:
             index = np.where(self.boundaryN['Elem']==i)[0] # [0] because index could be a 1D array and np.where returns a tupple
             for k in index:
                 indexNode =  self.boundaryN['Nodes'][k] * self.DOF
-                '''
+                # '''
                 self.valuesNBC[:] = 0.0
                 if iter == 0:
                     self.valuesNBC[0] = self.boundaryN['Values'][k,0]
@@ -511,9 +511,11 @@ class FEMSolver:
         self._deltaConfig()
         self._updateConfig(iterCount)
         error = calcErrorI(self.changeConfig, self.globalNodes)
+
+        length = lengthCheck(self.globalNodes, self.newConfig)
         # error = calcErrorII(self.changeConfig, self.newConfig, 0)
                 
-        return error, self.newConfig
+        return self.newConfig, error, length
 
     
 

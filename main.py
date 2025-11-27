@@ -15,7 +15,7 @@ from gen.gen_mesh1D import *
 from gen.gen_utilities import *
 from solver import *
 from input.input import *
-from boundary import *
+from boundary import * 
 from postpro import *
 from gen.gen_plot import *
 
@@ -23,7 +23,7 @@ from gen.gen_plot import *
 NEL= 10
 NNPEL = 2
 DOFPN = 6
-iterations = 10
+iterations = 4
 convergence = 1E-5
 loadsteps = 1
 
@@ -65,8 +65,9 @@ for loadstep in range(loadsteps):
         ratio = (loadstep+1)/loadsteps
         for iter in range(iterations):
                 print('iter=',iter)
-                error, solution = solverObj.FEMSolve(iter, ratio)
+                solution, error, length = solverObj.FEMSolve(iter, ratio)
                 print('error=',error, 'at loadstep=',loadstep+1, 'iter=',iter+1, 'at ratioLoadstep=',ratio)
+                print('solution=',solution)
                 # print('Tx=',solution['0'])
                 # print('RY=',solution['4'])
                 print('solution [Tx]=',solution['0'][-1],
@@ -75,6 +76,10 @@ for loadstep in range(loadsteps):
                         '[Rx]=',solution['3'][-1],
                         '[Ry]=',solution['4'][-1],
                         '[Rz]=',solution['5'][-1], 'at loadstep=',loadstep+1, 'iter=',iter+1, 'at ratioLoadstep=',ratio)
+                if np.isclose(length, geom['L']):
+                        print('Length of beam is close before and after deformation. Current length is ', length)
+                else: 
+                        print('Length of beam is different before and after deformation. Current length is ', length)
                 if error < convergence:
                         print('Solution convereged in ', iter+1, 'iterations')
                         # print('solution [Tz]=', f'{solution['2'][-1]}')
