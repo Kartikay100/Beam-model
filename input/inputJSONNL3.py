@@ -28,7 +28,7 @@ inputGeom = {'L': 1,   # length of beam, m
 inputMatProp = {'E': 210E9, # Youngs modulus, Pa
                 'rho': 7850, # density of steel, kg/m^3
                 'G': 80E9, # shear modulus, Pa
-                'Ks': 1.2E4 # shear correction coefficient, unitless
+                'Ks': 5/6 # shear correction coefficient, unitless
                 }
 
 inputEBC = {'globalNode#': [0],
@@ -39,7 +39,7 @@ inputEBC = {'globalNode#': [0],
         'Ry': [0],
         'Rz': [0]
         }
-inputNBC = {'globalNode#': [3000],
+inputNBC = {'globalNode#': [5],
         'Tx': [0], # T for translation, force, in Newtons
         'Ty': [0], 
         'Tz': [-5000],

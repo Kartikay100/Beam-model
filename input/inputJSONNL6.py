@@ -6,7 +6,7 @@ LM:          Oct 21, 2025
 
 DESCRIPTION
 This file creates JSON file from the input dictionary.
-Input data for verification #2: Cantilever beam with rectangular cross section with point load along X direction.
+Input data for verification #1 - Cantilever beam with point load along X direction undergoing nonlinear deformation.
 '''
 
 import json
@@ -15,20 +15,20 @@ import numpy as np
 g = 9.81 
 
 inputGeom = {'L': 1,   # length of beam, m
-        'b': 0.05, # height of beam, m,
-        'h': 0.05, # heaight of beam m
-        'A1': 0.05, # area of beam in m^2
-        'A2': 0.05, # area of beam in m^2
-        'A3': 0.0025, # cross-sectional area of beam in m^2
-        'I1': 5.20833E-7, # moment of inertia m^4, b*h^3/12
-        'I2': 5.20833E-7, # moment of inertia m^4,  inertia about E2xE2
-        'J': 1.04166E-6, # polar moment of inertia m^4, pi*(D^4-d^4)/32, inertia about E3xE3, J=I1+I2
+        'Di': 0.1016, # inner diameter of beam, m, 4in
+        'Do': 0.1397, # outer diameter of beam, m, 5.5in
+        'A1': 0.0381, # area of beam in m^2, of plane E1xE1
+        'A2': 0.0381, # area of beam in m^2, of plane E2xE2
+        'A3': 7.199E-3, # cross-sectional area of beam in m^2, of plane E3xE3
+        'I1': 13.4123E-6, # moment of inertia m^4, pi*(D^4-d^4)/64, inertia about E1xE1
+        'I2': 13.4123E-6, # moment of inertia m^4, pi*(D^4-d^4)/64, inertia about E2xE2
+        'J': 26.8246E-6, # polar moment of inertia m^4, pi*(D^4-d^4)/32, inertia about E3xE3, J=I1+I2
         }
 
 inputMatProp = {'E': 210E9, # Youngs modulus, Pa
                 'rho': 7850, # density of steel, kg/m^3
                 'G': 80E9, # shear modulus, Pa
-                'Ks': 1.2E4 # shear correction coefficient, unitless
+                'Ks': 1 # shear correction coefficient, unitless
                 }
 
 inputEBC = {'globalNode#': [0],
@@ -39,9 +39,9 @@ inputEBC = {'globalNode#': [0],
         'Ry': [0],
         'Rz': [0]
         }
-inputNBC = {'globalNode#': [10],
-        'Tx': [-5000], # T for translation, force, in Newtons
-        'Ty': [0], 
+inputNBC = {'globalNode#': [5],
+        'Tx': [-5000_000], # T for translation, force, in Newtons
+        'Ty': [-5000_000], 
         'Tz': [0],
         'Rx': [0], # R for rotation, moment
         'Ry': [0],

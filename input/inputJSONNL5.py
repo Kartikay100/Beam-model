@@ -6,7 +6,7 @@ LM:          Oct 21, 2025
 
 DESCRIPTION
 This file creates JSON file from the input dictionary.
-Input data for verification #3- Cantilever beam with point load along Y direction.
+Input data for verification #6- Cantilever beam with point load along X and Y direction.
 '''
 
 import json
@@ -28,7 +28,7 @@ inputGeom = {'L': 1,   # length of beam, m
 inputMatProp = {'E': 210E9, # Youngs modulus, Pa
                 'rho': 7850, # density of steel, kg/m^3
                 'G': 80E9, # shear modulus, Pa
-                'Ks': 1.2E4 # shear correction coefficient, unitless
+                'Ks': 5/6 # shear correction coefficient, unitless
                 }
 
 inputEBC = {'globalNode#': [0],
@@ -39,8 +39,8 @@ inputEBC = {'globalNode#': [0],
         'Ry': [0],
         'Rz': [0]
         }
-inputNBC = {'globalNode#': [10],
-        'Tx': [0], # T for translation, force, in Newtons
+inputNBC = {'globalNode#': [5],
+        'Tx': [-5000], # T for translation, force, in Newtons
         'Ty': [-5000], 
         'Tz': [0],
         'Rx': [0], # R for rotation, moment

@@ -2,7 +2,7 @@
 Author:      Kartikay Shukla
 File:        solver.py
 Created:     September 26, 2025 
-LM:          January 29, 2026
+LM:          October 22, 2025
 
 Description
 This file contains function for calculating, assemblying and solving stiffness matrices and force vector. Newton Raphson method is used to compute solutions for nonlinear problem.
@@ -67,7 +67,7 @@ class FEMSolver:
         #-------------------------------calling functions----------------------------#
         # interpolation functions
         self.interp, self.interpDiff = interpLagGLQ(self.NNPEL, self.NGQP)
-        # calling gauss weights
+        # calling gauss weights from gaussLegQuad function
         self.gaussWt = gLQ(self.NGQP)['weights']
         # permutation operator from utilities function
         self.permutation = permutation_symbol()
@@ -153,7 +153,7 @@ class FEMSolver:
         for j,row in enumerate(self.ECON):
             for k, node in enumerate(row):
                 self.phi_o[node,-1] = elemGlobalCoord[j,k]
-        
+        # print('phio=',self.phi_o)
         self.previousConfig['0'][:] = self.phi_o[:,0]
         self.previousConfig['1'][:] = self.phi_o[:,1]
         self.previousConfig['2'][:] = self.phi_o[:,2]
@@ -163,6 +163,19 @@ class FEMSolver:
         rotKeys = ['previous', 'change', 'new'] # keys for dictionary of rotation vector and rotation tensor
         self.rotVec = {i: np.zeros(shape=shapeVec, dtype=np.float64) for i in rotKeys}
         self.rotMat = {i: np.zeros(shape=shapeMat, dtype=np.float64) for i in rotKeys}
+
+        dataToWrite = {
+            'DOFPN': self.DOF, 'NNPEL': self.NNPEL, 'NEL': self.NEL, 'ECON': self.ECON, 'elemGlobalCoord': self.elemGlobalCoord, 'boundaryE': self.boundaryE, 'boundaryN': self.boundaryN, 'inMatModF': self.inMatModF, 'inMatModM': self.inMatModM, 'NGQP': self.NGQP, ''' 'appForce': self.appForce, 'appMoment': self.appMoment, '''
+            'Jacobian': self.J.tolist(),
+            'phi_o': self.phi_o.tolist(),
+            'interp': self.interp.tolist(), 
+            'interpD': self.interpDiff.tolist(),
+            'gaussWt': self.gaussWt.tolist(),
+            'permutation': self.permutation.tolist()
+        }
+        direc = r"/Users/kartikayshukla/Desktop/GRA/Models/FEM Models/4. Simo's static model/output"
+        name='InitialData'
+        write_toJSON(dataToWrite, name, direc)
     
     def _elemMatComput(self, i, iter):
         '''
@@ -235,15 +248,23 @@ class FEMSolver:
             #---------------------Configuration Update Procedures---------------------------------#
             # strain update at an element at a gauss point
             self.dphi_oE[:] = np.dot(self.S['S1'],self.phi_o[self.ECON[i],:])
+            # print('nu=',self.nu)
             self.nuGP[:] = np.dot(self.S['S0'],self.nu.T) # incremental rotation vector
+            # self.nuGP[:] = interpRotVec(self.S['S0'], self.nu.T)
             self.diffNuGP[:] = np.dot(self.S['S1'],self.nu.T) # derivative of incremental rotation vector at Gauss point
+            # self.diffNuGP[:] = interpRotVec(self.S['S1'], self.nu.T)
             
+            # print('diffNuGP=',self.diffNuGP)
             self.netRotVecGP[:] = np.dot(self.S['S0'],self.netRotVec.T)
+            # self.netRotVecGP[:] = interpRotVec(self.S['S0'], self.netRotVec.T)
             self.netRotMatGP[:,:] = rotTensor(self.netRotVecGP) # orthogonal rotation tensor at Gauss point
+            
             self.incRotMatGP[:,:] = rotTensor(self.nuGP) # incremental orthogonal rotation tensor at Gauss point
             
             normNu = np.linalg.norm(self.nuGP, ord=2)
+            # print('normNu=',normNu)
             self.xi[:] = self.incRotMatGP[:,:] @ self.prevOmegaGP[i, GP, :]
+            # self.xi[:] = rotVector(self.incRotMatGP[:,:] @ rotTensor(self.prevOmegaGP[i,GP,:]) @ self.incRotMatGP[:,:].T)
             if normNu == 0.0:
                 self.beta[:] = 0.0
             else:
@@ -270,20 +291,65 @@ class FEMSolver:
             for a in range(self.DOF//2): # a=alpha, b=beta as notes in reference material
                 for b in range(self.DOF//2):
                     self.coeffSME[f'K{a}{b}'][:,:] += self.matModFGP[a,b] * self.outerS['S11'] * effecWt
+                    # self.coeffSME[f'K{a}{b+self.DOF//2}'][:,:] += (np.dot(np.dot(self.dphi_oE, self.permutation[:,b,:]), self.matModFGP[a,:].T) - np.dot(self.forceGP[:], self.permutation[:,b,a])) * self.outerS['S10'] * effecWt
                     self.coeffSME[f'K{a}{b+self.DOF//2}'][:,:] += (self.dphi_oE @ self.permutation[:,b,:] @ self.matModFGP[a,:].T - self.forceGP @ self.permutation[:,b,a]) * self.outerS['S10'] * effecWt
+                    
                     self.coeffSME[f'K{a+self.DOF//2}{b}'][:,:] += (self.dphi_oE @ self.permutation[:,a,:] @ self.matModFGP[b,:].T + self.forceGP @ self.permutation[:,b,a]) * self.outerS['S01'] * effecWt    
+                    
                     self.coeffSME[f'K{a+self.DOF//2}{b+self.DOF//2}'][:,:] += ( ( ((self.dphi_oE @ self.permutation[:,a,:]) @ self.matModFGP @ (self.dphi_oE @ self.permutation[:,b,:]).T)\
                                                         + (- self.dphi_oE @ self.permutation[:,a,:] @ (self.forceGP @ self.permutation[:,b,:]).T) ) * self.outerS['S00'] \
                                                         + (- self.momentGP @ self.permutation[:,b,a]) * self.outerS['S10'] \
                                                         + (self.matModMGP[a,b]) * self.outerS['S11']) * effecWt
                 
                 self.coeffCVE[f'F{a}'][:] += ((-self.forceGP[a] * self.S['S1']) + (self.appForceGP[a] * self.S['S0'])) * effecWt
+                
+                print('Elem=',i,' GP=',GP,' a=',a,' appMomentGP[a]=',self.appMomentGP[a])
+                print('S0=',self.S['S0'], 'effecWt=',effecWt)
                 self.coeffCVE[f'F{a+self.DOF//2}'][:] += ((((self.permutation[a,:,:] @ self.forceGP) @ self.dphi_oE) + self.appMomentGP[a]) * self.S['S0'] + (- self.momentGP[a]) * self.S['S1']) * effecWt
 
         for j in range(self.DOF):
             for k in range(self.DOF):
                 self.SME[j:self.eqns_p_elem:self.DOF, k:self.eqns_p_elem:self.DOF] = self.coeffSME[f'K{j}{k}']
             self.CVE[j:self.eqns_p_elem:self.DOF] = self.coeffCVE[f'F{j}']
+        print('Elem=',i,' CVE=',self.CVE)
+        # writing to JSON for debugging
+        dataToWrite = {
+            'Elem': i,
+            'iter': iter,
+            f'prevOmegaGP[{i}]': self.prevOmegaGP[i].tolist(),
+            'netRotVec': self.netRotVec.tolist(),
+            'nu': self.nu.tolist(),
+            'GP': GP,
+            'currJacobian': self.currJ,
+            'effecWt': effecWt,
+            'S': {key: self.S[key].tolist() for key in self.S.keys()},
+            'outerS': {key: self.outerS[key].tolist() for key in self.outerS.keys()},
+            'dphi_oE': self.dphi_oE.tolist(),
+            'nuGP': self.nuGP.tolist(),
+            'diffNuGP': self.diffNuGP.tolist(),
+            'netRotVecGP': self.netRotVecGP.tolist(),
+            'netRotMatGP': self.netRotMatGP.tolist(),
+            'incRotMatGP': self.incRotMatGP.tolist(),
+            'normNu': normNu,
+            'beta': self.beta.tolist(),
+            'xi': self.xi.tolist(),
+            'gammaGP': self.gammaGP.tolist(),
+            f'omegaGP[{i}]': self.omegaGP[i].tolist(),
+            'matModFGP': self.matModFGP.tolist(),
+            'matModMGP': self.matModMGP.tolist(),
+            'forceGP': self.forceGP.tolist(),
+            'momentGP': self.momentGP.tolist(),
+            'appForceGP': self.appForceGP.tolist(),
+            'appMomentGP': self.appMomentGP.tolist(),
+            'SME_coeff': {key: self.coeffSME[key].tolist() for key in self.coeffSME.keys()},
+            'CVE_coeff': {key: self.coeffCVE[key].tolist() for key in self.coeffCVE.keys()},
+            'SME': self.SME.tolist(),
+            'CVE': self.CVE.tolist()
+        }
+        direc = r"/Users/kartikayshukla/Desktop/GRA/Models/FEM Models/4. Simo's static model/output"
+        name=f'Elem={i}_GP={GP}_Data'
+        write_toJSON(dataToWrite, name, direc)
+        # return self.SME, self.CVE
 
     def _applyEBC(self, i, iter):
         '''
@@ -319,6 +385,18 @@ class FEMSolver:
                         self.SME[:,indexNode+j] = 0.0
                         self.SME[indexNode+j,indexNode+j] = value
                         self.CVE[indexNode+j] = 0.0
+
+        # writing to JSON for debugging
+        dataToWrite = {
+            'Elem': i,
+            'iter': iter,
+            'SME': self.SME.tolist(),
+            'CVE': self.CVE.tolist()
+        }
+        direc = r"/Users/kartikayshukla/Desktop/GRA/Models/FEM Models/4. Simo's static model/output"
+        name=f'Iter={iter}_Elem={i}_EBC_Data'
+        write_toJSON(dataToWrite, name, direc)       
+        # return self.SME , self.CVE 
     
     def _applyNBC(self, i, iter, ratioLoadStep):
         '''
@@ -333,14 +411,60 @@ class FEMSolver:
 
        #---------------Applying boundary condition----------------#
         # Nested If loops to handle where to apply boundary condition
+        # if iter == 0:
         if i in self.boundaryN['Elem']:
             index = np.where(self.boundaryN['Elem']==i)[0] # [0] because index could be a 1D array and np.where returns a tupple
             for k in index:
                 indexNode =  self.boundaryN['Nodes'][k] * self.DOF
+                '''
+                self.valuesNBC[:] = 0.0
+                if iter == 0:
+                    self.valuesNBC[:] = self.boundaryN['Values'][k,:]
+                else:
+                    self.netRotVecGP[:] = 0.0 # using same memory space for rotation vector
+                    self.netRotVecGP[:] = np.array([self.changeConfig['3'][self.ECON[i,self.boundaryN['Nodes'][k]]], 
+                                                    self.changeConfig['4'][self.ECON[i,self.boundaryN['Nodes'][k]]], 
+                                                    self.changeConfig['5'][self.ECON[i,self.boundaryN['Nodes'][k]]]], dtype=np.float64)
+                    self.netRotMatGP[:,:] = 0.0 # using same memory space for rotation matrix
+                    self.netRotMatGP[:,:] = rotTensor(self.netRotVecGP)
+                    self.rotNBC[:] = 0.0
+                    self.transNBC[:] = 0.0
+                    self.transNBC[:] = np.array([self.boundaryN['Values'][k,0],
+                                            self.boundaryN['Values'][k,1],
+                                            self.boundaryN['Values'][k,2]], dtype=np.float64)
+                    self.rotNBC[:] = np.array([self.boundaryN['Values'][k,3],
+                                            self.boundaryN['Values'][k,4],
+                                            self.boundaryN['Values'][k,5]], dtype=np.float64)
+                    
+                    self.rotNBCTransf[:] = self.netRotMatGP @ self.rotNBC
+                    self.transNBCTransf[:] = self.netRotMatGP @ self.transNBC
+                    self.valuesNBC[0] = self.transNBCTransf[0]
+                    self.valuesNBC[1] = self.transNBCTransf[1]
+                    self.valuesNBC[2] = self.transNBCTransf[2]
+                    self.valuesNBC[3] = self.rotNBCTransf[0]
+                    self.valuesNBC[4] = self.rotNBCTransf[1]
+                    self.valuesNBC[5] = self.rotNBCTransf[2]
+                    # print('NboundarValues=',self.boundaryN['Values'][k])
+                # '''
                 for j in range(self.DOF):    
                     # code for applying natural boundary condition for first iteration
+                    # self.CVE[indexNode+j] += self.valuesNBC[j] * ratioLoadStep
                     self.CVE[indexNode+j] += self.boundaryN['Values'][k,j] * ratioLoadStep
+        # writing to JSON for debugging
+        dataToWrite = {
+            'Elem': i,
+            'iter': iter,
+            'ratioLoadStep': ratioLoadStep,
+            'SME': self.SME.tolist(),
+            'CVE': self.CVE.tolist()
+        }
+        direc = r"/Users/kartikayshukla/Desktop/GRA/Models/FEM Models/4. Simo's static model/output"
+        name=f'Iter={iter}_Elem={i}_NBC_Data'
+        write_toJSON(dataToWrite, name, direc)      
         
+        # return self.SME , self.CVE 
+
+
     def _globalSolver(self, iter, ratioLoadStep):
         '''
         Function to assemble and solve global matrices. It uses )elemMatComput function to compute individual element matrices and then assembles them to form global matrix.
@@ -376,9 +500,10 @@ class FEMSolver:
         # create global sparse stiffness matrix from vectorised matrix
         self.SMG[:,:] = coo_array((self.sparSMG, (self.sparIIrow,self.sparJJcol)), shape=(self.shapeGM,self.shapeGM), dtype=np.float64).tocsr()
         self.SMGdense[:,:] = self.SMG.todense() # for debugging purposes only, store dense form of global stiffness matrix
-        
+        print('determinant of global SM=', np.linalg.det(np.array(self.SMGdense)), 'before solving.')
         # solve the linear algebra problem using sparse solver
         self.changeSolution[:] = spsolve(self.SMG, self.CVG)
+        # return self.changeSolution
 
     def _deltaConfig(self):
         '''
@@ -390,6 +515,8 @@ class FEMSolver:
 
         for i in range(self.DOF):
             self.changeConfig[f'{i}'][:] = self.changeSolution[i::self.DOF]
+        
+        # return self.changeConfig
     
     def _updateConfig(self, iter):
         '''
@@ -430,6 +557,9 @@ class FEMSolver:
             self.rotMat['new'][:,:] = self.rotMat['change'] @ self.rotMat['previous']
             self.rotMatSolution[i,:,:] = self.rotMat['new'][:,:]
             self.rotVec['new'][:] = rotVector(self.rotMat['new'])
+            
+            # check if the sign of rotation vector needs to be changed.
+            # self.rotVec['new'][:] = rotVecCheck(self.rotVec['new']) 
 
             # update configuration dictionary
             self.newConfig['3'][i] = self.rotVec['new'][0]
@@ -439,16 +569,13 @@ class FEMSolver:
         self.phi_o[:,0] = self.newConfig['0'][:]
         self.phi_o[:,1] = self.newConfig['1'][:]
         self.phi_o[:,2] = self.newConfig['2'][:]
+        # return self.previousConfig, self.newConfig #self.phi_o
     
     def FEMSolve(self, iterCount, ratioLoadStep):
         '''
         This function calls other functions in this class to compute configurations and returns the error between configurations.
-        iterCount = current iteration number
-        ratioLoadStep = ratio of total NBC to be applied in this load step calculation.
-        Returns
-        newConfig: dictionary of np.ndarray. Coordinates of each global node after configuration update.
-        error: float, error between previous and new configuration.
-        length: float, length check of the beam after configuration update. Length of the beam should not change in deformation.
+        j = the degree of freedom for which error is computed.
+        loadStep: dictionary containing number of load steps, maximum number of iterations and convergence criteria.
         '''
         
         self._globalSolver(iterCount, ratioLoadStep)
@@ -458,8 +585,24 @@ class FEMSolver:
         error = calcErrorI(self.changeConfig, self.globalNodes)
 
         length = lengthCheck(self.globalNodes, self.newConfig)
+        for i in range(self.globalNodes):
+            self.rotVecSolution[i,:] = rotVector(self.rotMatSolution[i,:,:])
+        
+        dataToWrite = {
+            'ratioLoadstep': ratioLoadStep, 'iteration': iterCount,
+            'SMG': self.SMGdense.tolist(),
+            'CVG': self.CVG.tolist(),
+            'changeSolution': self.changeSolution.tolist(),
+            'previousConfig': self.previousConfig,
+            'changeConfig': self.changeConfig,
+            'newConfig': self.newConfig,
+            'phi_o': self.phi_o.tolist()
+        }
+        direc = r"/Users/kartikayshukla/Desktop/GRA/Models/FEM Models/4. Simo's static model/output"
+        name = f'RatioLoadstep={ratioLoadStep}_Iter={iterCount}'
+        write_toJSON(dataToWrite, name, direc)
                 
-        return self.newConfig, error, length
+        return self.newConfig, error, length, self.rotVecSolution
 
     
 

@@ -13,7 +13,7 @@ import json
 import numpy as np 
 
 g = 9.81 
-moment = 0.25 * 4*np.pi #* np.sqrt(2)
+moment = 4*np.pi
 Im = 7850 * 0.0000109477 * 1**3 / 3
 
 inputGeom = {'L': 1,   # length of beam, m
@@ -29,7 +29,7 @@ inputGeom = {'L': 1,   # length of beam, m
 inputMatProp = {'E': 210E9, # Youngs modulus, Pa
                 'rho': 7850, # density of steel, kg/m^3
                 'G': 80E9, # shear modulus, Pa
-                'Ks': 1E4, # shear correction factor, unitless
+                'Ks': 1, # shear correction factor, unitless
                 'Im': Im, # mass moment of inertia of rod about its end mL^2/3
                 }
 
@@ -42,7 +42,7 @@ inputEBC = {'globalNode#': [0],
         'Rz': [0]
         }
 
-inputNBC = {'globalNode#': [10],
+inputNBC = {'globalNode#': [5],
         'Tx': [0], # T for translation, force, in Newtons
         'Ty': [0], 
         'Tz': [0],

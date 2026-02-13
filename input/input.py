@@ -2,7 +2,7 @@
 Author:      Kartikay Shukla
 File:        input.py
 Created:     October 6, 2025 
-LM:          October 6, 2025
+LM:          January 29, 2026
 
 DESCRIPTION
 This is an FEM Model for Timoshenko beam problem Example 4.5 from the book Introduction to Linear Finite Element Method, Second Edition.
@@ -35,14 +35,14 @@ def inputJson():
     return geom, material, boundaryCondE, boundaryCondN, appForce, appMoment
 
 
-def inputPython(dispL):
-    '''
-    This function reads input from individual input python files and compiles them into a output.
-    '''
-    geom = geomBeamFEM()
+# def inputPython(dispL):
+#     '''
+#     This function reads input from individual input python files and compiles them into a output.
+#     '''
+#     geom = geomBeamFEM()
 
-    material = matBeamFEM()
+#     material = matBeamFEM()
 
-    boundaryCond = boundaryBeamFEM(geom['L'], material['k'], dispL)
+#     boundaryCond = boundaryBeamFEM(geom['L'], material['k'], dispL)
 
-    return geom, boundaryCond, material
+#     return geom, boundaryCond, material
