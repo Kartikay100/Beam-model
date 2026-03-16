@@ -15,3 +15,9 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
+
+Modules
+=======
+
+.. automodule:: your_script_name
+   :members:

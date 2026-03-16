@@ -15,3 +15,10 @@ jobs:
       - name: Build HTML
         run: |
           sphinx-build -b html . ./docs
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./docs  # This must match the folder where your HTML was built
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
