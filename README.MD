@@ -1,14 +1,13 @@
-# <Finite Element solvers for coupled Drillstring models>
+# Finite Element solvers for coupled Drillstring models
 
-<This repo contains code for open source solvers for modelling drillstring using finite element model.>
+This repo contains code for open source solvers for modelling drillstring using finite element model.
 
 ## Features
-- <Solvers in this code are generic in nature which can be used to develop drillstring models.>
-- <The spreadsheet in the verification folder provides guidelines for validating any drillstring model.>
-- <>
+- Solvers in this code are generic in nature which can be used to develop drillstring models.
+- The spreadsheet in the verification folder provides guidelines for validating any drillstring model.
 
 ## Repository Structure
-- `gen`: contains generic python functions 
+- `gen`: contains generic python functions. Details on each functions can be found in the documentation. 
 - `input`: contains files that define the input condition for different verfication cases.
 - `output`: folder for storing the calculations in JSON files.
 - `Testing`: contains python notebooks with test cases for different functions present in gen folder.
