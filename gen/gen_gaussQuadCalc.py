@@ -23,7 +23,7 @@ def gLQ(NGQP):
 
 def gaussLegQuad(NGQP=None):
     '''
-    This function calculates the gaussian points and gaussian weights. Gaussian points are the roots of Legendre polynomials. 
+    This function calculates the Gaussian points and Gaussian weights. Gaussian points are the roots of Legendre polynomials. 
     Gaussian weights are determined by the compairing the result of integration of basis function from -1 to +1 with Gauss quadrature rule. Depending on the number of Gauss Quadrature points desired, the function gives a dictionary with Gauss points for polynomials form 0 to NGQP th order and corresponding weights. 
     For more information visit https://en.wikipedia.org/wiki/Legendre_polynomials.
 
@@ -52,7 +52,7 @@ def gaussLegQuad(NGQP=None):
 
     #---------------------Gauss Weights-----------------------#
     '''
-    A set of basis functions will be assumed and they will be integrations with limits -1 to +1. This integration will be compared to Gauss Quadrature rule to solve for the Gaussian weights.
+    A set of basis functions will be assumed and integrated with limits -1 to +1. This integration will be compared to Gauss Quadrature rule to solve for the Gaussian weights.
     Basis functions: 1, x, x**2, x**3 etc.
 
     Solutions of integration of basis functions: integration of f(x) from -1 to +1 where f(x) is a basis function. It can be verified that mathematically that basis functions with odd powers give 0 as a result of integration from -1 to +1 and even powers give the results as 2/(n+1) where n is the order of polynomial.

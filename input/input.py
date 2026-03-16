@@ -2,17 +2,12 @@
 Author:      Kartikay Shukla
 File:        input.py
 Created:     October 6, 2025 
-LM:          January 29, 2026
+LM:          March 03, 2026
 
 DESCRIPTION
-This is an FEM Model for Timoshenko beam problem Example 4.5 from the book Introduction to Linear Finite Element Method, Second Edition.
-
-This file has a single function with all the input parameters compiled. Output of the function returns an array of array. First position is geometry array, second for boundary condition array and third for material property array.
+This file has a single function with all the input parameters compiled. Output of the function returns an array of array.
 '''
 
-# from .inputGeom import *
-# from .inputBC import *
-# from .inputMaterial import *
 import numpy as np
 import json
 
@@ -20,29 +15,19 @@ def inputJson():
     with open('input/inputJSON.json', mode='r', encoding='utf-8') as read_file:
         inputs  = json.load(read_file)
     
-    geom = inputs[0]
+    cond = inputs[0]
     
-    material = inputs [1]
-
-    boundaryCondE = inputs[2]
-
-    boundaryCondN = inputs[3]
-
-    appForce = inputs[4]
+    geom = inputs[1]
     
-    appMoment = inputs[5]
+    material = inputs [2]
 
-    return geom, material, boundaryCondE, boundaryCondN, appForce, appMoment
+    boundaryCondE = inputs[3]
 
+    boundaryCondN = inputs[4]
 
-# def inputPython(dispL):
-#     '''
-#     This function reads input from individual input python files and compiles them into a output.
-#     '''
-#     geom = geomBeamFEM()
+    appForce = inputs[5]
+    
+    appMoment = inputs[6]
 
-#     material = matBeamFEM()
+    return cond, geom, material, boundaryCondE, boundaryCondN, appForce, appMoment
 
-#     boundaryCond = boundaryBeamFEM(geom['L'], material['k'], dispL)
-
-#     return geom, boundaryCond, material

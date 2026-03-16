@@ -5,7 +5,7 @@ Created:     July 25, 2025
 LM:          July 25, 2025
 
 DESCRIPTION
-This file contains functions for generating mesh for the given 1D geometry. The code is mainly suitable for uniform mesh size but could also be expanded to accomodate for non uniform sizes. It also has a function for DOF connectivity matrix
+This file contains functions for generating mesh for the given 1D geometry. The code is mainly suitable for uniform mesh size. It also has a function for DOF connectivity matrix
 '''
 
 import numpy as np
@@ -54,7 +54,7 @@ def mesh1DLGL(L, NEL, NNPEL, NGQP=None):
 
 def mesh1D(L, NEL, NNPEL, DOFPN=None):
     '''
-    This function creates meshes with local coordinates and global coordinates.
+    This function creates meshes with local coordinates and global coordinates. This function distributes the nodes uniformly over an element.
     Also building element connectivity array.
     L = length of beam, ft
     NEL: number of elements

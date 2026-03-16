@@ -11,7 +11,6 @@ This file contains functions for computing interpolation functions. Based on num
 import sympy as sy
 import numpy as np
 from scipy.special import legendre
-from .gen_spectNodes import *
 from .gen_gaussQuadCalc import *
 
 def spectralNodes(points:int) -> np.ndarray:
@@ -38,12 +37,11 @@ def interpLagGLQ(NNPEL, NGQP):
 
     #------------------Initialise-------------------------------#
     # calling domain values at nodes in natural coordinates
-    # domain = domainNatCoord(NNPEL) # domain of natural coordinates, used for integration using Gauss Legendre Quadrature points, calls Gauss–Lobatto node
-    domain = spectralNodes(NNPEL)
+    domain = spectralNodes(NNPEL) # domain of natural coordinates, used for integration using Gauss Legendre Quadrature points, calls Gauss–Lobatto node
     gaussPoints = gLQ(NGQP)['points'] # NumPy library to call Gauss-Legendre
     # gaussWts = gLQ(NGQP)['weights']
 
-    # Empty dictionariy to assign values
+    # Memory allocation
     funcLag = np.zeros(shape=(NNPEL,NGQP),dtype=np.float64)
     funcLagDiff = np.zeros(shape=(NNPEL,NGQP),dtype=np.float64)
     
@@ -84,14 +82,14 @@ def interpLag(xVal,x):
     '''
     polyOrder = len(xVal)
     # Empty dictionaries to assign values
-    lagInterp = {} # for interpolation function
-    lagInterpDiff = {} # for first derivative of interpolation function
+    lagInterp = np.zeros(shape=polyOrder, dtype=np.float64) # for interpolation function
+    lagInterpDiff = np.zeros(shape=polyOrder, dtype=np.float64) # for first derivative of interpolation function
     for j,val in enumerate(xVal):
-        phi=1 # empty variable for product
+        phi = 1 # empty variable for product
         phiDiff = 0 # empty variable for summation
         for i in range(polyOrder):
-            if i!=j:
-                phi = phi* (x-xVal[i])/(val-xVal[i])
+            if i != j:
+                phi = phi * (x-xVal[i])/(val-xVal[i])
                 # phiDiff = phiDiff + 1/(x-xVal[i]) # incorrect function
             else:
                 continue        

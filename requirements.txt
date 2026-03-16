@@ -1,0 +1,7 @@
+numpy
+scikit-image
+matplotlib
+scipy
+json
+itertools
+time
