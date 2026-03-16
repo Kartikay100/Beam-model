@@ -1,6 +1,6 @@
 # Finite Element solvers for coupled Drillstring models
 
-This repo contains code for open source solvers for modelling drillstring using finite element model.
+This repo contains code for open source solvers for modelling drillstring using finite element method.
 
 ## Features
 - Solvers in this code are generic in nature which can be used to develop drillstring models.
