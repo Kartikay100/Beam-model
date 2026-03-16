@@ -25,7 +25,7 @@
 pip install -r requirements.txt
 
 ## Usage
-
+ 
 ### 1) Generate the input JSON file
 This script writes `inputJSON.json` from predefined dictionaries or lists (initial conditions, geometry, material, boundary conditions, loads, distributed force and moment).
 
