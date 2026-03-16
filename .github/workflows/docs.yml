@@ -26,3 +26,6 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+      - name: Install Dependencies
+        run: |
+          pip install sphinx sphinx-rtd-theme numpy matplotlib scipy json itertools time  # Add whatever you use here
