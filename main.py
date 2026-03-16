@@ -20,7 +20,7 @@ from gen.gen_plot import *
 
 # intialise input
 cond, geom, material, boundaryCondE, boundaryCondN, inAppForce, inAppMoment = inputJson()
-
+ 
 # Finite element parameters
 NEL = cond['NEL']
 NNPEL = cond['NNPEL']
