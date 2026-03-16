@@ -12,10 +12,10 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.x'
-      - name: Install Sphinx
+          python-version: '3.11'
+      - name: Install Dependencies
         run: |
-          pip install sphinx sphinx-rtd-theme
+          pip install sphinx sphinx-rtd-theme numpy matplotlib scipy itertools time  # Add whatever you use here
       - name: Build HTML
         run: |
           sphinx-build -b html . ./docs
@@ -26,6 +26,3 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
-      - name: Install Dependencies
-        run: |
-          pip install sphinx sphinx-rtd-theme numpy matplotlib scipy itertools time  # Add whatever you use here
