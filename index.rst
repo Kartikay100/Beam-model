@@ -16,8 +16,29 @@ Indices and tables
 * :ref:`modindex`
 * :ref:`search`
 
-Modules
-=======
+Documentation for Functions
+==========================
 
-.. automodule:: your_script_name
+.. automodule:: gen.gen_utilities
+   :members:
+
+.. automodule:: gen.gen_mesh1D
+   :members:
+
+.. automodule:: gen.gen_gaussQuadCalc
+   :members:
+
+.. automodule:: gen.gen_interpFunction
+   :members:
+
+.. automodule:: gen.gen_plot
+   :members:
+
+.. automodule:: gen.gen_compCost
+   :members:
+
+.. automodule:: boundary
+   :members:
+
+.. automodule:: solver
    :members:
