@@ -178,7 +178,7 @@ class FEMSolver:
 
         self.netRotVec[:,:] = self.rotation[self.ECON[i],:] # total rotation vector at nodes of an element in current configuration, defining the total rotation from initial configuration to current configuration.
         self.nu[:,:] = self.changeRotation[self.ECON[i],:] # incremental rotation vector
-        
+         
         for GP in range(self.NGQP):
             # Re-zero temporary memory allocations
             self.S['S0'][:] = 0.0
