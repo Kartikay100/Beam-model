@@ -28,4 +28,4 @@ jobs:
         uses: actions/deploy-pages@v4
       - name: Install Dependencies
         run: |
-          pip install sphinx sphinx-rtd-theme numpy matplotlib scipy json itertools time  # Add whatever you use here
+          pip install sphinx sphinx-rtd-theme numpy matplotlib scipy itertools time  # Add whatever you use here
