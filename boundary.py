@@ -130,7 +130,7 @@ class boundary():
         
         return CVE
 
-    def applyMBC(self, i, MBC):
+    def applyMBC(self, i, MBC): 
         '''
         This function returns mixed boundary conditions for applying to stiffness matrix and force vector.
         i: element number
