@@ -22,13 +22,13 @@ Documentation for Functions
 .. automodule:: gen.gen_utilities
    :members:
 
-.. automodule:: gen.gen_mesh1D
+.. automodule:: gen.gen_mesh1D.pu
    :members:
 
 .. automodule:: gen.gen_gaussQuadCalc
    :members:
 
-.. automodule:: gen.gen_interpFunction
+.. automodule:: gen.gen_interpFunction.py
    :members:
 
 .. automodule:: gen.gen_plot
