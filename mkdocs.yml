@@ -4,12 +4,13 @@ theme:
 nav:
   - Home: index.md
   - Solvers: 
-    - Overview: functions.md
-    - Utilities: 'functions.md#utilities-section'
-    - Numerical Methods Logic: 'functions.md#math-section'
-    - Interpolation: 'functions.md#interpolation-section'
-    - Mesh: 'functions.md#mesh-section'
-    - Miscellaneous: 'functions.md#misc-section'
+    - Utilities: utilities.md
+    - Numerical Methods Logic: numericalmethods.md
+    - Interpolation: interpolation.md
+    - Mesh: mesh.md
+    - Miscellaneous: misc.md
+    - Boundary: boundary.md
+    - FEM Solver: FEMSolver.md
 plugins:
   - mkdocstrings: # This replaces "autodoc" to read your Python code
       handlers:
