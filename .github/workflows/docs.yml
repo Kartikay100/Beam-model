@@ -15,7 +15,7 @@ jobs:
           python-version: '3.11'
       - name: Install Dependencies
         run: |
-          pip install sphinx sphinx-rtd-theme numpy matplotlib scipy itertools time  # Add whatever you use here
+          pip install sphinx sphinx-rtd-theme numpy matplotlib scipy time  # Add whatever you use here
       - name: Build HTML
         run: |
           sphinx-build -b html . ./docs
