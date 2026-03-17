@@ -9,21 +9,30 @@ permissions:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true  # This stops the Node 20 warnings
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5  # Updated to v5
         with:
           python-version: '3.11'
+
       - name: Install Dependencies
         run: |
           pip install mkdocs-material mkdocstrings[python] numpy matplotlib scipy
-      - name: Build and Deploy
+
+      - name: Build Site
         run: |
           mkdocs build
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ./site  # MkDocs builds to /site, Sphinx built to /docs
+          # MkDocs builds the HTML into the 'site' folder
+          path: ./site 
+
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
