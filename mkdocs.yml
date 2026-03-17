@@ -3,7 +3,7 @@ theme:
   name: material
 nav:
   - Home: index.md
-  - Solvers: functions.md
+  - Solvers: 
     - Utilities: functions.md#utilities-section
     - Numerical Methods Logic: functions.md#math-section
     - Interpolation: functions.md#interpolation-section
