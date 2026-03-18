@@ -1,0 +1,3 @@
+## Boundary Section
+
+::: boundary
