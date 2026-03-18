@@ -1,1 +1,25 @@
-docs/
+# --- Python Cache ---
+__pycache__/
+*.py[cod]
+*$py.class
+
+# --- Virtual Environments ---
+venv/
+env/
+.venv/
+ENV/
+
+# --- Distribution / Packaging ---
+dist/
+build/
+*.egg-info/
+
+# -- Content -- #
+docs/boundary.html
+docs/compCost.html
+docs/gaussQuadCalc.html
+docs/interpFunction.html
+docs/mesh1D.html
+docs/plot.html
+docs/solver.html
+docs/utilities.html
