@@ -1,3 +1,0 @@
-## FEM Solver
-
-::: solver
